@@ -332,12 +332,6 @@ public final class CameraManager {
     Log.e(TAG, "width:" + width + " height:" + height + " rect.left:" + rect.left
           + " rect.top:" + rect.top + " rect.width():" + rect.width() + " rect.height():" + rect.height());
     // Go ahead and assume it's YUV rather than die.
-    if(rect.left + rect.width() > width){
-       rect.right = rect.left + width - 1;
-    }
-    if(rect.top + rect.height() > height){
-      rect.bottom = rect.top + height - 1;
-    }
     return new PlanarYUVLuminanceSource(data, width, height, rect.left, rect.top,
                                         rect.width(), rect.height(), false);
   }

@@ -24,10 +24,8 @@ public class ScanActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode==RESULT_OK){
-            Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show();
-            Bundle bundle = data.getExtras();
-            if (bundle != null) {
-            }
+            String result = data.getStringExtra("result");
+            Toast.makeText(this, result, Toast.LENGTH_SHORT).show();
         }
 
     }
