@@ -19,7 +19,6 @@ package com.google.zxing.client.android;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -36,24 +35,18 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.zxing.BarcodeFormat;
-import com.google.zxing.DecodeHintType;
 import com.google.zxing.Result;
 import com.google.zxing.ResultMetadataType;
 import com.google.zxing.ResultPoint;
 import com.google.zxing.client.android.camera.CameraManager;
-import com.google.zxing.client.android.history.HistoryItem;
-import com.google.zxing.client.android.history.HistoryManager;
-import com.google.zxing.client.android.result.ResultButtonListener;
 import com.google.zxing.client.android.result.ResultHandler;
 import com.google.zxing.client.android.result.ResultHandlerFactory;
-import com.google.zxing.client.android.result.supplement.SupplementalInfoRetriever;
 
 import java.io.IOException;
 import java.text.DateFormat;
@@ -73,11 +66,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
   private static final String TAG = CaptureActivity.class.getSimpleName();
 
-  private static final long DEFAULT_INTENT_RESULT_DURATION_MS = 1500L;
-  private static final long BULK_MODE_SCAN_DELAY_MS = 1000L;
-
-  private static final String[] ZXING_URLS = { "http://zxing.appspot.com/scan", "zxing://scan/" };
-
   private static final int HISTORY_REQUEST_CODE = 0x0000bacc;
 
   private static final Collection<ResultMetadataType> DISPLAYABLE_METADATA_TYPES =
@@ -92,16 +80,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   private ViewfinderView viewfinderView;
   private TextView statusView;
   private View resultView;
-  private Result lastResult;
   private boolean hasSurface;
-  private boolean copyToClipboard;
-  private IntentSource source;
-  private String sourceUrl;
-  private ScanFromWebPageManager scanFromWebPageManager;
-  private Collection<BarcodeFormat> decodeFormats;
-  private Map<DecodeHintType,?> decodeHints;
-  private String characterSet;
-  private HistoryManager historyManager;
   private InactivityTimer inactivityTimer;
   private BeepManager beepManager;
   private AmbientLightManager ambientLightManager;
@@ -138,10 +117,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   protected void onResume() {
     super.onResume();
     
-    // historyManager must be initialized here to update the history preference
-    historyManager = new HistoryManager(this);
-    historyManager.trimHistory();
-
     // CameraManager must be initialized here, not in onCreate(). This is necessary because we don't
     // want to open the camera driver and measure the screen size if we're going to show the help on
     // first launch. That led to bugs where the scanning rectangle was the wrong size and partially
@@ -155,34 +130,13 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     statusView = (TextView) findViewById(R.id.status_view);
 
     handler = null;
-    lastResult = null;
-
-    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-    if (prefs.getBoolean(PreferencesActivity.KEY_DISABLE_AUTO_ORIENTATION, true)) {
-      setRequestedOrientation(getCurrentOrientation());
-    } else {
-      setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-    }
 
     resetStatusView();
-
 
     beepManager.updatePrefs();
     ambientLightManager.start(cameraManager);
 
     inactivityTimer.onResume();
-
-    Intent intent = getIntent();
-
-    copyToClipboard = prefs.getBoolean(PreferencesActivity.KEY_COPY_TO_CLIPBOARD, true)
-        && (intent == null || intent.getBooleanExtra(Intents.Scan.SAVE_HISTORY, true));
-
-    source = IntentSource.NONE;
-    sourceUrl = null;
-    scanFromWebPageManager = null;
-    decodeFormats = null;
-    characterSet = null;
 
     SurfaceView surfaceView = (SurfaceView) findViewById(R.id.preview_view);
     SurfaceHolder surfaceHolder = surfaceView.getHolder();
@@ -243,17 +197,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     super.onDestroy();
   }
 
-  @Override
-  public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-    if (resultCode == RESULT_OK && requestCode == HISTORY_REQUEST_CODE && historyManager != null) {
-      int itemNumber = intent.getIntExtra(Intents.History.ITEM_NUMBER, -1);
-      if (itemNumber >= 0) {
-        HistoryItem historyItem = historyManager.buildHistoryItem(itemNumber);
-        decodeOrStoreSavedBitmap(null, historyItem.getResult());
-      }
-    }
-  }
-
   private void decodeOrStoreSavedBitmap(Bitmap bitmap, Result result) {
     // Bitmap isn't used yet -- will be used soon
     if (handler == null) {
@@ -300,16 +243,9 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
    */
   public void handleDecode(Result rawResult, Bitmap barcode, float scaleFactor) {
     inactivityTimer.onActivity();
-    lastResult = rawResult;
     ResultHandler resultHandler = ResultHandlerFactory.makeResultHandler(this, rawResult);
-
-    boolean fromLiveScan = barcode != null;
-    if (fromLiveScan) {
-      historyManager.addHistoryItem(rawResult, resultHandler);
-      // Then not from history, so beep/vibrate and we have an image to draw on
-      beepManager.playBeepSoundAndVibrate();
-      drawResultPoints(barcode, scaleFactor, rawResult);
-    }
+    beepManager.playBeepSoundAndVibrate();
+    drawResultPoints(barcode, scaleFactor, rawResult);
     handleDecodeInternally(rawResult, resultHandler, barcode);
   }
 
@@ -358,13 +294,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
   // Put up our own UI for how to handle the decoded contents.
   private void handleDecodeInternally(Result rawResult, ResultHandler resultHandler, Bitmap barcode) {
-
-    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-    if (resultHandler.getDefaultButtonID() != null && prefs.getBoolean(PreferencesActivity.KEY_AUTO_OPEN_WEB, false)) {
-      resultHandler.handleButtonPress(resultHandler.getDefaultButtonID());
-      return;
-    }
 
     statusView.setVisibility(View.GONE);
     viewfinderView.setVisibility(View.GONE);
@@ -418,27 +347,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     TextView supplementTextView = (TextView) findViewById(R.id.contents_supplement_text_view);
     supplementTextView.setText("");
     supplementTextView.setOnClickListener(null);
-    if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-        PreferencesActivity.KEY_SUPPLEMENTAL, true)) {
-      SupplementalInfoRetriever.maybeInvokeRetrieval(supplementTextView,
-                                                     resultHandler.getResult(),
-                                                     historyManager,
-                                                     this);
-    }
-
-    int buttonCount = resultHandler.getButtonCount();
-    ViewGroup buttonView = (ViewGroup) findViewById(R.id.result_button_view);
-    buttonView.requestFocus();
-    for (int x = 0; x < ResultHandler.MAX_BUTTON_COUNT; x++) {
-      TextView button = (TextView) buttonView.getChildAt(x);
-      if (x < buttonCount) {
-        button.setVisibility(View.VISIBLE);
-        button.setText(resultHandler.getButtonText(x));
-        button.setOnClickListener(new ResultButtonListener(resultHandler, x));
-      } else {
-        button.setVisibility(View.GONE);
-      }
-    }
     Intent resultIntent = new Intent();
     resultIntent.putExtra("result", rawResult.getText());
     this.setResult(RESULT_OK, resultIntent);
@@ -457,7 +365,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
       cameraManager.openDriver(surfaceHolder);
       // Creating the handler starts the preview, which can also throw a RuntimeException.
       if (handler == null) {
-        handler = new CaptureActivityHandler(this, decodeFormats, decodeHints, characterSet, cameraManager);
+        handler = new CaptureActivityHandler(this, null, null, null, cameraManager);
       }
       decodeOrStoreSavedBitmap(null, null);
     } catch (IOException ioe) {
@@ -492,7 +400,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     statusView.setText(R.string.msg_default_status);
     statusView.setVisibility(View.VISIBLE);
     viewfinderView.setVisibility(View.VISIBLE);
-    lastResult = null;
   }
 
   public void drawViewfinder() {
