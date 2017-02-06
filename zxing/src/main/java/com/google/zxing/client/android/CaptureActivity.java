@@ -18,6 +18,7 @@ package com.google.zxing.client.android;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -63,20 +64,10 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
   private static final String TAG = CaptureActivity.class.getSimpleName();
 
-  private static final int HISTORY_REQUEST_CODE = 0x0000bacc;
-
-  private static final Collection<ResultMetadataType> DISPLAYABLE_METADATA_TYPES =
-      EnumSet.of(ResultMetadataType.ISSUE_NUMBER,
-                 ResultMetadataType.SUGGESTED_PRICE,
-                 ResultMetadataType.ERROR_CORRECTION_LEVEL,
-                 ResultMetadataType.POSSIBLE_COUNTRY);
-
   private CameraManager cameraManager;
   private CaptureActivityHandler handler;
   private Result savedResultToShow;
   private ViewfinderView viewfinderView;
-  private TextView statusView;
-  private View resultView;
   private boolean hasSurface;
   private InactivityTimer inactivityTimer;
   private BeepManager beepManager;
@@ -100,12 +91,9 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     Window window = getWindow();
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     setContentView(R.layout.capture);
-
     hasSurface = false;
     inactivityTimer = new InactivityTimer(this);
     beepManager = new BeepManager(this);
-
-    PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
   }
 
   @Override
@@ -121,12 +109,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     viewfinderView = (ViewfinderView) findViewById(R.id.viewfinder_view);
     viewfinderView.setCameraManager(cameraManager);
 
-    resultView = findViewById(R.id.result_view);
-    statusView = (TextView) findViewById(R.id.status_view);
-
     handler = null;
-
-    resetStatusView();
 
     beepManager.updatePrefs();
 
@@ -265,58 +248,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   // Put up our own UI for how to handle the decoded contents.
   private void handleDecodeInternally(Result rawResult, ResultHandler resultHandler, Bitmap barcode) {
 
-    statusView.setVisibility(View.GONE);
     viewfinderView.setVisibility(View.GONE);
-    resultView.setVisibility(View.VISIBLE);
 
-    ImageView barcodeImageView = (ImageView) findViewById(R.id.barcode_image_view);
-    if (barcode == null) {
-      barcodeImageView.setImageBitmap(BitmapFactory.decodeResource(getResources(),
-          R.drawable.launcher_icon));
-    } else {
-      barcodeImageView.setImageBitmap(barcode);
-    }
-
-    TextView formatTextView = (TextView) findViewById(R.id.format_text_view);
-    formatTextView.setText(rawResult.getBarcodeFormat().toString());
-
-    TextView typeTextView = (TextView) findViewById(R.id.type_text_view);
-    typeTextView.setText(resultHandler.getType().toString());
-
-    DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
-    TextView timeTextView = (TextView) findViewById(R.id.time_text_view);
-    timeTextView.setText(formatter.format(rawResult.getTimestamp()));
-
-
-    TextView metaTextView = (TextView) findViewById(R.id.meta_text_view);
-    View metaTextViewLabel = findViewById(R.id.meta_text_view_label);
-    metaTextView.setVisibility(View.GONE);
-    metaTextViewLabel.setVisibility(View.GONE);
-    Map<ResultMetadataType,Object> metadata = rawResult.getResultMetadata();
-    if (metadata != null) {
-      StringBuilder metadataText = new StringBuilder(20);
-      for (Map.Entry<ResultMetadataType,Object> entry : metadata.entrySet()) {
-        if (DISPLAYABLE_METADATA_TYPES.contains(entry.getKey())) {
-          metadataText.append(entry.getValue()).append('\n');
-        }
-      }
-      if (metadataText.length() > 0) {
-        metadataText.setLength(metadataText.length() - 1);
-        metaTextView.setText(metadataText);
-        metaTextView.setVisibility(View.VISIBLE);
-        metaTextViewLabel.setVisibility(View.VISIBLE);
-      }
-    }
-
-    CharSequence displayContents = resultHandler.getDisplayContents();
-    TextView contentsTextView = (TextView) findViewById(R.id.contents_text_view);
-    contentsTextView.setText(displayContents);
-    int scaledSize = Math.max(22, 32 - displayContents.length() / 4);
-    contentsTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, scaledSize);
-
-    TextView supplementTextView = (TextView) findViewById(R.id.contents_supplement_text_view);
-    supplementTextView.setText("");
-    supplementTextView.setOnClickListener(null);
     Intent resultIntent = new Intent();
     resultIntent.putExtra("result", rawResult.getText());
     this.setResult(RESULT_OK, resultIntent);
@@ -353,24 +286,17 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     AlertDialog.Builder builder = new AlertDialog.Builder(this);
     builder.setTitle(getString(R.string.app_name));
     builder.setMessage(getString(R.string.msg_camera_framework_bug));
-    builder.setPositiveButton(R.string.button_ok, new FinishListener(this));
-    builder.setOnCancelListener(new FinishListener(this));
+    builder.setPositiveButton(R.string.button_ok, new DialogInterface.OnClickListener() {
+
+      @Override
+      public void onClick(DialogInterface dialog, int which) {
+        finish();
+      }
+
+    });
     builder.show();
   }
 
-  public void restartPreviewAfterDelay(long delayMS) {
-    if (handler != null) {
-      handler.sendEmptyMessageDelayed(R.id.restart_preview, delayMS);
-    }
-    resetStatusView();
-  }
-
-  private void resetStatusView() {
-    resultView.setVisibility(View.GONE);
-    statusView.setText(R.string.msg_default_status);
-    statusView.setVisibility(View.VISIBLE);
-    viewfinderView.setVisibility(View.VISIBLE);
-  }
 
   public void drawViewfinder() {
     viewfinderView.drawViewfinder();

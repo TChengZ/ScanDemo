@@ -1,12 +1,11 @@
 package com.jc.scandemo;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 
 import com.google.zxing.client.android.CaptureActivity;
-import com.google.zxing.client.android.Intents;
 
 public class ScanActivity extends AppCompatActivity {
 
@@ -15,7 +14,6 @@ public class ScanActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scan);
         Intent intent = new Intent(this, CaptureActivity.class);
-//        intent.setAction(Intents.Scan.MODE);
         startActivityForResult(intent, 0);
     }
 
