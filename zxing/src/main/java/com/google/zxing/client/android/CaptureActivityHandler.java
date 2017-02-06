@@ -56,8 +56,8 @@ public final class CaptureActivityHandler extends Handler {
                          String characterSet,
                          CameraManager cameraManager) {
     this.activity = activity;
-    decodeThread = new DecodeThread(activity, decodeFormats, baseHints, characterSet,
-        new ViewfinderResultPointCallback(activity.getViewfinderView()));
+    decodeThread = new DecodeThread(activity, decodeFormats, baseHints, characterSet, null
+        );//new ViewfinderResultPointCallback(activity.getViewfinderView())
     decodeThread.start();
     state = State.SUCCESS;
 
@@ -75,9 +75,9 @@ public final class CaptureActivityHandler extends Handler {
     }
     else if(what == R.id.decode_succeeded){
       state = State.SUCCESS;
-      Bundle bundle = message.getData();
-      Bitmap barcode = null;
-      float scaleFactor = 1.0f;
+//      Bundle bundle = message.getData();
+//      Bitmap barcode = null;
+//      float scaleFactor = 1.0f;
 //      if (bundle != null) {
 //        byte[] compressedBitmap = bundle.getByteArray(DecodeThread.BARCODE_BITMAP);
 //        if (compressedBitmap != null) {
@@ -87,7 +87,7 @@ public final class CaptureActivityHandler extends Handler {
 //        }
 //        scaleFactor = bundle.getFloat(DecodeThread.BARCODE_SCALED_FACTOR);
 //      }
-      activity.handleDecode((Result) message.obj, barcode, scaleFactor);
+      activity.handleDecode((Result) message.obj);
     }
     else if(what == R.id.decode_failed){
       state = State.PREVIEW;

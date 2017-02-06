@@ -320,4 +320,8 @@ public final class CameraManager {
     return null;
   }
 
+  public Point getCameraResolution(){
+      return configManager.getCameraResolution();
+  }
+
 }

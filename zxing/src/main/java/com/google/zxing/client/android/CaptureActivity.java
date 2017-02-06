@@ -20,21 +20,24 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import com.google.zxing.Result;
 import com.google.zxing.client.android.camera.CameraManager;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 
 /**
  * This activity opens the camera and does the actual scanning on a background thread. It draws a
@@ -56,6 +59,11 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   private InactivityTimer inactivityTimer;
   private BeepManager beepManager;
 
+  private RelativeLayout mRlScanContainer = null;
+  private RelativeLayout mRlScanArea = null;
+  private ImageView mIvScanLine = null;
+  private Rect mScanRect;
+
   ViewfinderView getViewfinderView() {
     return viewfinderView;
   }
@@ -75,9 +83,23 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     Window window = getWindow();
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     setContentView(R.layout.capture);
+    initView();
     hasSurface = false;
     inactivityTimer = new InactivityTimer(this);
     beepManager = new BeepManager(this);
+  }
+
+  private void initView(){
+     mRlScanContainer = (RelativeLayout) findViewById(R.id.rl_scan_container);
+     mRlScanArea = (RelativeLayout) findViewById(R.id.rl_scan_area);
+     mIvScanLine = (ImageView) findViewById(R.id.iv_scan_line);
+     TranslateAnimation animation = new TranslateAnimation(Animation.RELATIVE_TO_PARENT, 0.0f, Animation
+            .RELATIVE_TO_PARENT, 0.0f, Animation.RELATIVE_TO_PARENT, 0.0f, Animation.RELATIVE_TO_PARENT,
+            0.9f);
+     animation.setDuration(4500);
+     animation.setRepeatCount(-1);
+     animation.setRepeatMode(Animation.RESTART);
+     mIvScanLine.startAnimation(animation);
   }
 
   @Override
@@ -90,8 +112,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     // off screen.
     cameraManager = new CameraManager(getApplication());
 
-    viewfinderView = (ViewfinderView) findViewById(R.id.viewfinder_view);
-    viewfinderView.setCameraManager(cameraManager);
+//    viewfinderView = (ViewfinderView) findViewById(R.id.viewfinder_view);
+//    viewfinderView.setCameraManager(cameraManager);
 
     handler = null;
 
@@ -134,22 +156,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     super.onDestroy();
   }
 
-  private void decodeOrStoreSavedBitmap(Bitmap bitmap, Result result) {
-    // Bitmap isn't used yet -- will be used soon
-    if (handler == null) {
-      savedResultToShow = result;
-    } else {
-      if (result != null) {
-        savedResultToShow = result;
-      }
-      if (savedResultToShow != null) {
-        Message message = Message.obtain(handler, R.id.decode_succeeded, savedResultToShow);
-        handler.sendMessage(message);
-      }
-      savedResultToShow = null;
-    }
-  }
-
   @Override
   public void surfaceCreated(SurfaceHolder holder) {
     if (holder == null) {
@@ -175,19 +181,11 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
    * A valid barcode has been found, so give an indication of success and show the results.
    *
    * @param rawResult The contents of the barcode.
-   * @param scaleFactor amount by which thumbnail was scaled
-   * @param barcode   A greyscale bitmap of the camera data which was decoded.
    */
-  public void handleDecode(Result rawResult, Bitmap barcode, float scaleFactor) {
+  public void handleDecode(Result rawResult) {
     inactivityTimer.onActivity();
     beepManager.playBeepSoundAndVibrate();
-    handleDecode(rawResult);
-  }
-
-  // Put up our own UI for how to handle the decoded contents.
-  private void handleDecode(Result rawResult) {
-
-    viewfinderView.setVisibility(View.GONE);
+//    viewfinderView.setVisibility(View.GONE);
 
     Intent resultIntent = new Intent();
     resultIntent.putExtra("result", rawResult.getText());
@@ -209,7 +207,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
       if (handler == null) {
         handler = new CaptureActivityHandler(this, null, null, null, cameraManager);
       }
-      decodeOrStoreSavedBitmap(null, null);
+      initScanArea();
+//      decodeOrStoreSavedBitmap(null, null);
     } catch (IOException ioe) {
       Log.w(TAG, ioe);
       displayFrameworkBugMessageAndExit();
@@ -236,9 +235,60 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     builder.show();
   }
 
+  public Rect getScanArea(){
+     return mScanRect;
+  }
+
+  /**
+   * 初始化扫描的矩形区域
+   */
+  private void initScanArea() {
+    int cameraWidth = cameraManager.getCameraResolution().y;
+    int cameraHeight = cameraManager.getCameraResolution().x;
+
+    /** 获取布局中扫描框的位置信息 */
+    int[] location = new int[2];
+    mRlScanArea.getLocationInWindow(location);
+
+    int cropLeft = location[0];
+    int cropTop = location[1] - getStatusBarHeight();
+
+    int cropWidth = mRlScanArea.getWidth();
+    int cropHeight = mRlScanArea.getHeight();
+
+    /** 获取布局容器的宽高 */
+    int containerWidth = mRlScanContainer.getWidth();
+    int containerHeight = mRlScanContainer.getHeight();
+
+    /** 计算最终截取的矩形的左上角顶点x坐标 */
+    int x = cropLeft * cameraWidth / containerWidth;
+    /** 计算最终截取的矩形的左上角顶点y坐标 */
+    int y = cropTop * cameraHeight / containerHeight;
+
+    /** 计算最终截取的矩形的宽度 */
+    int width = cropWidth * cameraWidth / containerWidth;
+    /** 计算最终截取的矩形的高度 */
+    int height = cropHeight * cameraHeight / containerHeight;
+
+    /** 生成最终的截取的矩形 */
+    mScanRect = new Rect(x, y, width + x, height + y);
+  }
+
+  private int getStatusBarHeight() {
+    try {
+      Class<?> c = Class.forName("com.android.internal.R$dimen");
+      Object obj = c.newInstance();
+      Field field = c.getField("status_bar_height");
+      int x = Integer.parseInt(field.get(obj).toString());
+      return getResources().getDimensionPixelSize(x);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return 0;
+  }
 
   public void drawViewfinder() {
-    viewfinderView.drawViewfinder();
+//    viewfinderView.drawViewfinder();
   }
 
 }

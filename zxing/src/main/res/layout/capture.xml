@@ -14,17 +14,84 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  -->
-<merge xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rl_scan_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent"
        xmlns:tools="http://schemas.android.com/tools">
 
   <SurfaceView android:id="@+id/preview_view"
                android:layout_width="fill_parent"
                android:layout_height="fill_parent"/>
 
-  <com.google.zxing.client.android.ViewfinderView
+  <!--<com.google.zxing.client.android.ViewfinderView
       android:id="@+id/viewfinder_view"
       android:layout_width="fill_parent"
-      android:layout_height="fill_parent"/>
+      android:layout_height="fill_parent"/>-->
+  <ImageView
+      android:id="@+id/iv_outside_scan_top"
+      android:layout_width="match_parent"
+      android:layout_height="100dp"
+      android:background="@drawable/bg_outside_scan"/>
+  <RelativeLayout
+      android:id="@+id/rl_scan_area"
+      android:layout_width="258dp"
+      android:layout_height="258dp"
+      android:layout_below="@id/iv_outside_scan_top"
+      android:layout_centerHorizontal="true"
+      android:background="@drawable/bg_scan_area">
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/scan_left_top"/>
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/scan_right_top"/>
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/scan_left_bottom"/>
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/scan_right_bottom"/>
+    <ImageView
+        android:id="@+id/iv_scan_line"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginBottom="5dp"
+        android:layout_marginTop="5dp"
+        android:src="@drawable/scan_line"/>
 
-
-</merge>
+  </RelativeLayout>
+  <ImageView
+      android:id="@+id/iv_outside_scan_bottom"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_below="@id/rl_scan_area"
+      android:layout_alignParentBottom="true"
+      android:background="@drawable/bg_outside_scan"/>
+  <ImageView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_toLeftOf="@id/rl_scan_area"
+      android:layout_alignParentLeft="true"
+      android:layout_below="@id/iv_outside_scan_top"
+      android:layout_above="@id/iv_outside_scan_bottom"
+      android:background="@drawable/bg_outside_scan"/>
+  <ImageView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_toRightOf="@id/rl_scan_area"
+      android:layout_alignParentRight="true"
+      android:layout_below="@id/iv_outside_scan_top"
+      android:layout_above="@id/iv_outside_scan_bottom"
+      android:background="@drawable/bg_outside_scan"/>
+</RelativeLayout>
