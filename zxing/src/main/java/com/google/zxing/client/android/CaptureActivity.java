@@ -19,8 +19,6 @@ package com.google.zxing.client.android;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -31,7 +29,6 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.util.TypedValue;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -150,28 +147,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     }
   }
 
-  private int getCurrentOrientation() {
-    int rotation = getWindowManager().getDefaultDisplay().getRotation();
-    if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-      switch (rotation) {
-        case Surface.ROTATION_0:
-        case Surface.ROTATION_90:
-          return ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-        default:
-          return ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-      }
-    } else {
-      switch (rotation) {
-        case Surface.ROTATION_0:
-        case Surface.ROTATION_270:
-          return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-        default:
-          return ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
-      }
-    }
-  }
-  
-
   @Override
   protected void onPause() {
     if (handler != null) {
@@ -182,7 +157,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     ambientLightManager.stop();
     beepManager.close();
     cameraManager.closeDriver();
-    //historyManager = null; // Keep for onActivityResult
     if (!hasSurface) {
       SurfaceView surfaceView = (SurfaceView) findViewById(R.id.preview_view);
       SurfaceHolder surfaceHolder = surfaceView.getHolder();
