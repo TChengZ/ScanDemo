@@ -166,29 +166,6 @@ public final class CameraManager {
   }
 
   /**
-   * Convenience method for {@link com.google.zxing.client.android.CaptureActivity}
-   *
-   * @param newSetting if {@code true}, light should be turned on if currently off. And vice versa.
-   */
-  public synchronized void setTorch(boolean newSetting) {
-    OpenCamera theCamera = camera;
-    if (theCamera != null) {
-      if (newSetting != configManager.getTorchState(theCamera.getCamera())) {
-        boolean wasAutoFocusManager = autoFocusManager != null;
-        if (wasAutoFocusManager) {
-          autoFocusManager.stop();
-          autoFocusManager = null;
-        }
-        configManager.setTorch(theCamera.getCamera(), newSetting);
-        if (wasAutoFocusManager) {
-          autoFocusManager = new AutoFocusManager(context, theCamera.getCamera());
-          autoFocusManager.start();
-        }
-      }
-    }
-  }
-
-  /**
    * A single preview frame will be returned to the handler supplied. The data will arrive as byte[]
    * in the message.obj field, with width and height encoded as message.arg1 and message.arg2,
    * respectively.

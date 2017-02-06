@@ -17,11 +17,8 @@
 package com.google.zxing.client.android.result;
 
 import android.app.Activity;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 
 import com.google.zxing.Result;
-import com.google.zxing.client.android.PreferencesActivity;
 import com.google.zxing.client.result.ParsedResult;
 import com.google.zxing.client.result.ParsedResultType;
 
@@ -43,17 +40,11 @@ public abstract class ResultHandler {
   private final ParsedResult result;
   private final Activity activity;
   private final Result rawResult;
-  private final String customProductSearch;
-
-  ResultHandler(Activity activity, ParsedResult result) {
-    this(activity, result, null);
-  }
 
   ResultHandler(Activity activity, ParsedResult result, Result rawResult) {
     this.result = result;
     this.activity = activity;
     this.rawResult = rawResult;
-    this.customProductSearch = parseCustomSearchURL();
   }
 
   public final ParsedResult getResult() {
@@ -92,17 +83,6 @@ public abstract class ResultHandler {
    */
   public final ParsedResultType getType() {
     return result.getType();
-  }
-
-
-  private String parseCustomSearchURL() {
-    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activity);
-    String customProductSearch = prefs.getString(PreferencesActivity.KEY_CUSTOM_PRODUCT_SEARCH,
-        null);
-    if (customProductSearch != null && customProductSearch.trim().isEmpty()) {
-      return null;
-    }
-    return customProductSearch;
   }
 
 }
