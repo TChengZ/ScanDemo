@@ -53,8 +53,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
   private CameraManager cameraManager;
   private CaptureActivityHandler handler;
-  private Result savedResultToShow;
-  private ViewfinderView viewfinderView;
   private boolean hasSurface;
   private InactivityTimer inactivityTimer;
   private BeepManager beepManager;
@@ -63,10 +61,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   private RelativeLayout mRlScanArea = null;
   private ImageView mIvScanLine = null;
   private Rect mScanRect;
-
-  ViewfinderView getViewfinderView() {
-    return viewfinderView;
-  }
 
   public Handler getHandler() {
     return handler;
@@ -82,7 +76,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
     Window window = getWindow();
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    setContentView(R.layout.capture);
+    setContentView(R.layout.activity_capture);
     initView();
     hasSurface = false;
     inactivityTimer = new InactivityTimer(this);
@@ -111,9 +105,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     // first launch. That led to bugs where the scanning rectangle was the wrong size and partially
     // off screen.
     cameraManager = new CameraManager(getApplication());
-
-//    viewfinderView = (ViewfinderView) findViewById(R.id.viewfinder_view);
-//    viewfinderView.setCameraManager(cameraManager);
 
     handler = null;
 
@@ -208,7 +199,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
         handler = new CaptureActivityHandler(this, null, null, null, cameraManager);
       }
       initScanArea();
-//      decodeOrStoreSavedBitmap(null, null);
     } catch (IOException ioe) {
       Log.w(TAG, ioe);
       displayFrameworkBugMessageAndExit();
@@ -285,10 +275,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
       e.printStackTrace();
     }
     return 0;
-  }
-
-  public void drawViewfinder() {
-//    viewfinderView.drawViewfinder();
   }
 
 }

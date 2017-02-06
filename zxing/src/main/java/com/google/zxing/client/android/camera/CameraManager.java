@@ -235,11 +235,6 @@ public final class CameraManager {
       }
       Rect rect = new Rect(framingRect);
       Point cameraResolution = configManager.getCameraResolution();
-      /** 因为换成了竖屏显示，所以不替换屏幕宽高得出的预览图是变形的,并且无法正确进行解码操作 */
-      int tmp = cameraResolution.x;
-      cameraResolution.x = cameraResolution.y;
-      cameraResolution.y = tmp;
-      /*******************************************/
       Point screenResolution = configManager.getScreenResolution();
       if (cameraResolution == null || screenResolution == null) {
         // Called early, before init even finished
