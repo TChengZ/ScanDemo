@@ -78,15 +78,15 @@ public final class CaptureActivityHandler extends Handler {
       Bundle bundle = message.getData();
       Bitmap barcode = null;
       float scaleFactor = 1.0f;
-      if (bundle != null) {
-        byte[] compressedBitmap = bundle.getByteArray(DecodeThread.BARCODE_BITMAP);
-        if (compressedBitmap != null) {
-          barcode = BitmapFactory.decodeByteArray(compressedBitmap, 0, compressedBitmap.length, null);
-          // Mutable copy:
-          barcode = barcode.copy(Bitmap.Config.ARGB_8888, true);
-        }
-        scaleFactor = bundle.getFloat(DecodeThread.BARCODE_SCALED_FACTOR);
-      }
+//      if (bundle != null) {
+//        byte[] compressedBitmap = bundle.getByteArray(DecodeThread.BARCODE_BITMAP);
+//        if (compressedBitmap != null) {
+//          barcode = BitmapFactory.decodeByteArray(compressedBitmap, 0, compressedBitmap.length, null);
+//          // Mutable copy:
+//          barcode = barcode.copy(Bitmap.Config.ARGB_8888, true);
+//        }
+//        scaleFactor = bundle.getFloat(DecodeThread.BARCODE_SCALED_FACTOR);
+//      }
       activity.handleDecode((Result) message.obj, barcode, scaleFactor);
     }
     else if(what == R.id.decode_failed){
