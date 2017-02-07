@@ -34,7 +34,7 @@ final class BeepManager implements MediaPlayer.OnErrorListener, Closeable {
 
   private static final String TAG = BeepManager.class.getSimpleName();
 
-  private static final float BEEP_VOLUME = 0.10f;
+  private static final float BEEP_VOLUME = 1.0f;
   private static final long VIBRATE_DURATION = 200L;
 
   private final Activity activity;
@@ -70,7 +70,7 @@ final class BeepManager implements MediaPlayer.OnErrorListener, Closeable {
   private MediaPlayer buildMediaPlayer(Context activity) {
     MediaPlayer mediaPlayer = new MediaPlayer();
     try {
-      AssetFileDescriptor file = activity.getResources().openRawResourceFd(R.raw.qrcode_completed);
+      AssetFileDescriptor file = activity.getResources().openRawResourceFd(R.raw.scan_completed);
       try {
         mediaPlayer.setDataSource(file.getFileDescriptor(), file.getStartOffset(), file.getLength());
       } finally {

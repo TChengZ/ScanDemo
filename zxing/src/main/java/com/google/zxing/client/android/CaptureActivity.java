@@ -176,7 +176,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   public void handleDecode(Result rawResult) {
     inactivityTimer.onActivity();
     beepManager.playBeepSoundAndVibrate();
-//    viewfinderView.setVisibility(View.GONE);
 
     Intent resultIntent = new Intent();
     resultIntent.putExtra("result", rawResult.getText());
